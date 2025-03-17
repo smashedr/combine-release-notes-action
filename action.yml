@@ -1,0 +1,34 @@
+name: "Combine Release Notes"
+description: "Combine Release Notes from Pre-Releases for Generating Latest Release Notes"
+author: "Shane"
+branding:
+  icon: "activity"
+  color: "yellow"
+
+inputs:
+  update:
+    description: "Update Release Notes"
+    required: false
+    default: "true"
+  heading:
+    description: "Release Notes Heading"
+    required: false
+    default: "### Extended Changelog"
+  summary:
+    description: "Add Summary to Job"
+    required: false
+    default: "true"
+  token:
+    description: "GitHub Token"
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  json:
+    description: "Changes JSON Object"
+  markdown:
+    description: "Changes Markdown String"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
