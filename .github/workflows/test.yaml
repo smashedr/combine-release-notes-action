@@ -33,6 +33,9 @@ jobs:
       - name: "Test Local Action"
         id: test
         uses: ./
+        with:
+          update: false
+          summary: false
 
       #- name: "Verify Outputs"
       #  run: |

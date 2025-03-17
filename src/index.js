@@ -43,11 +43,11 @@ const github = require('@actions/github')
         // console.log('releases:', releases)
         // core.endGroup() // Releases
 
-        // TODO: MOCK API CODE
-        // console.log(JSON.stringify(releases))
-        // const json = fs.readFileSync('test-releases.json', 'utf-8')
+        // // TODO: MOCK API CODE
+        // // console.log(JSON.stringify(releases))
+        // const json = fs.readFileSync('test/test-releases.json', 'utf-8')
         // const releases = JSON.parse(json)
-        // const json2 = fs.readFileSync('test-current.json', 'utf-8')
+        // const json2 = fs.readFileSync('test/test-current.json', 'utf-8')
         // const current = JSON.parse(json2)
         // console.log('current:', current)
         // console.log('releases:', releases)
@@ -57,11 +57,15 @@ const github = require('@actions/github')
             return core.warning('No Releases to Process...')
         }
 
+        core.startGroup('Processed Data')
         const processed = processReleases(releases)
         console.log('processed:', processed)
+        core.endGroup() // Processed Data
 
+        core.startGroup('Markdown Notes')
         const markdown = generateNotes(config, processed)
         console.log(markdown)
+        core.endGroup() // Markdown Notes
 
         // Make Changes
         core.startGroup('Updated Release Body')
@@ -69,27 +73,27 @@ const github = require('@actions/github')
         console.log(body)
         core.endGroup() // Updated Release Body
 
-        // // Update Release
-        // if (config.update) {
-        //     await octokit.rest.repos.updateRelease({
-        //         ...github.context.repo,
-        //         release_id: github.context.payload.release.id,
-        //         body,
-        //     })
-        // } else {
-        //     core.info('⏩ \u001b[33;1mSkipping Release Notes Update')
-        // }
+        // Update Release
+        if (config.update) {
+            await octokit.rest.repos.updateRelease({
+                ...github.context.repo,
+                release_id: github.context.payload.release.id,
+                body,
+            })
+        } else {
+            core.info('⏩ \u001b[33;1mSkipping Release Notes Update')
+        }
 
-        // // Outputs
-        // core.info('📩 Setting Outputs')
-        // core.setOutput('json', JSON.stringify(processed))
-        // core.setOutput('markdown', markdown)
+        // Outputs
+        core.info('📩 Setting Outputs')
+        core.setOutput('json', JSON.stringify(processed))
+        core.setOutput('markdown', markdown)
 
-        // // Summary
-        // if (config.summary) {
-        //     core.info('📝 Writing Job Summary')
-        //     await addSummary(config, markdown)
-        // }
+        // Summary
+        if (config.summary) {
+            core.info('📝 Writing Job Summary')
+            await addSummary(config, markdown)
+        }
 
         core.info(`✅ \u001b[32;1mFinished Success`)
     } catch (e) {
