@@ -6,6 +6,17 @@ branding:
   color: "yellow"
 
 inputs:
+  previous:
+    description: "Previous Version to Stop"
+    required: false
+  pre:
+    description: "Skip Not Pre-Releases"
+    required: false
+    default: "true"
+  max:
+    description: "Max Releases to Process"
+    required: false
+    default: "30"
   update:
     description: "Update Release Notes"
     required: false

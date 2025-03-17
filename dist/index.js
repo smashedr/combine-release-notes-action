@@ -31849,10 +31849,10 @@ const github = __nccwpck_require__(3228)
         console.log('github.context.payload.repo:', github.context.repo)
         core.endGroup() // Debug
 
-        if (github.context.eventName !== 'release') {
-            return core.warning(`Skipping event: ${github.context.eventName}`)
-        }
-        if (github.context.payload.release.prerelease) {
+        // if (github.context.eventName !== 'release') {
+        //     return core.warning(`Skipping event: ${github.context.eventName}`)
+        // }
+        if (github.context.payload.release?.prerelease) {
             return core.warning(`Skipping prerelease.`)
         }
 
@@ -31862,10 +31862,14 @@ const github = __nccwpck_require__(3228)
         console.log(config)
         core.endGroup() // Config
 
+        if (!config.max || config.max > 100) {
+            return core.setFailed('The max must be between 1 and 100.')
+        }
+
         // Set Variables
         const octokit = github.getOctokit(config.token)
 
-        const [current, releases] = await getReleases(config, octokit)
+        const releases = await getReleases(config, octokit)
         // core.startGroup('Releases')
         // console.log('current:', current)
         // console.log('releases:', releases)
@@ -31895,14 +31899,22 @@ const github = __nccwpck_require__(3228)
         console.log(markdown)
         core.endGroup() // Markdown Notes
 
-        // Make Changes
-        core.startGroup('Updated Release Body')
-        const body = `${current.body}\n\n${config.heading}\n\n${markdown}\n`
-        console.log(body)
-        core.endGroup() // Updated Release Body
-
         // Update Release
-        if (config.update) {
+        if (config.update && github.context.payload.release?.id) {
+            core.startGroup('Updated Release Body')
+            const release = await octokit.rest.repos.getRelease({
+                ...github.context.repo,
+                release_id: github.context.payload.release.id,
+            })
+            // console.log('release:', release)
+            console.log('before:\n', JSON.stringify(release.data.body))
+
+            const body = `${release.data.body}\n\n${config.heading}\n\n${markdown}\n`
+            // console.log(body)
+            console.log('after:\n', JSON.stringify(body))
+
+            core.endGroup() // Updated Release Body
+
             await octokit.rest.repos.updateRelease({
                 ...github.context.repo,
                 release_id: github.context.payload.release.id,
@@ -31996,7 +32008,8 @@ function processReleases(releases) {
         // console.log(item)
         if (item.human.length) {
             const human = []
-            for (let x of item.human.split('\r\n')) {
+            const sep = item.human.includes('\r\n') ? '\r\n' : '\n'
+            for (let x of item.human.split(sep)) {
                 const trim = x.trim()
                 if (trim && !trim.startsWith('**Full Changelog**')) {
                     human.push(trim)
@@ -32006,7 +32019,8 @@ function processReleases(releases) {
         }
         if (item.changed.length) {
             const changed = []
-            for (let x of item.changed.split('\r\n')) {
+            const sep = item.changed.includes('\r\n') ? '\r\n' : '\n'
+            for (let x of item.changed.split(sep)) {
                 const trim = x.trim()
                 if (trim?.startsWith('* ')) {
                     changed.push(trim)
@@ -32022,35 +32036,38 @@ function processReleases(releases) {
  * Get Releases
  * @param config
  * @param {InstanceType<typeof github.GitHub>} octokit
- * @return {Promise<[InstanceType<typeof github.GitHub>, [InstanceType<typeof github.GitHub>]]>}
+ * @return {Promise<[InstanceType<typeof github.GitHub>]>}
  */
 async function getReleases(config, octokit) {
     console.log('--- Getting Releases')
     const releases = await octokit.rest.repos.listReleases({
         ...github.context.repo,
-        per_page: 5,
+        per_page: config.max,
     })
-    let current
     let results = []
     for (const release of releases.data) {
-        if (current) {
-            if (release.prerelease) {
-                results.push(release)
-                console.log('ADDING:', release.tag_name)
-                continue
-            } else {
+        if (config.previous) {
+            if (release.tag_name === config.previous) {
                 console.log('STOPPING ON:', release.tag_name)
                 break
             }
-        }
-        if (release.id === github.context.payload.release.id) {
-            console.log('CURRENT RELEASE:', release.tag_name)
-            current = release
+            if (!release.prerelease && config.pre) {
+                console.log('SKIPPING:', release.tag_name)
+                continue
+            }
+            console.log('ADDING:', release.tag_name)
+            results.push(release)
+        } else if (release.prerelease) {
+            console.log('ADDING:', release.tag_name)
+            results.push(release)
+        } else {
+            console.log('STOPPING ON:', release.tag_name)
+            break
         }
     }
     // console.log('results:', results)
     // console.log('results.length:', results.length)
-    return [current, results]
+    return results
 }
 
 /**
@@ -32064,7 +32081,8 @@ async function addSummary(config, markdown) {
     core.summary.addRaw('🚀 We Did It Red It!\n\n')
 
     core.summary.addRaw('<details><summary>Changelog</summary>')
-    core.summary.addRaw(markdown)
+    // core.summary.addRaw(markdown)
+    core.summary.addCodeBlock(markdown, 'text')
     core.summary.addRaw('</details>\n')
 
     delete config.token
@@ -32083,10 +32101,13 @@ async function addSummary(config, markdown) {
 
 /**
  * Get Config
- * @return {{ update: boolean, heading: string, summary: boolean, token: string }}
+ * @return {{ previous: string, pre: boolean, max: number, update: boolean, heading: string, summary: boolean, token: string }}
  */
 function getConfig() {
     return {
+        previous: core.getInput('previous'),
+        pre: core.getBooleanInput('pre'),
+        max: parseInt(core.getInput('max')),
         update: core.getBooleanInput('update'),
         heading: core.getInput('heading'),
         summary: core.getBooleanInput('summary'),

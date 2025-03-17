@@ -28,12 +28,21 @@ Action to Generate Combine Release Notes.
 
 ## Inputs
 
-| Input   | Type | Default&nbsp;Value       | Input&nbsp;Description  |
-| :------ | :--: | :----------------------- | :---------------------- |
-| update  |  -   | `true`                   | Update Release Notes \* |
-| heading |  -   | `### Extended Changelog` | Release Notes Heading   |
-| summary |  -   | `true`                   | Add Summary to Job \*   |
-| token   |  -   | `github.token`           | For Using a PAT [^1]    |
+| Input&nbsp;Name | Type | Default&nbsp;Value       | Input&nbsp;Description      |
+| :-------------- | :--: | :----------------------- | :-------------------------- |
+| previous        |  -   | -                        | Previous Version to Stop \* |
+| pre             |  -   | `true`                   | Skip Not Pre-Releases \*    |
+| max             |  -   | `30`                     | Max Releases to Process     |
+| update          |  -   | `true`                   | Update Release Notes \*     |
+| heading         |  -   | `### Extended Changelog` | Release Notes Heading       |
+| summary         |  -   | `true`                   | Add Summary to Job \*       |
+| token           |  -   | `github.token`           | For Using a PAT [^1]        |
+
+**previous:** Set this to the previous version to stop gathering notes.
+Example, if you are on 1.0.0 and releasing 1.0.1 you can set previous to `1.0.0`
+to get notes for all releases after 1.0.0.
+
+**pre:** If you set `previous` and want to include releases not tagged as prerelease, set this to `false`.
 
 **update:** Set this to `false` if you only want to use the [Outputs](#Outputs).
 
@@ -153,6 +162,56 @@ jobs:
         uses: smashedr/combine-release-notes-action@master
         continue-on-error: true
 ```
+
+</details>
+
+<details><summary>Manual Generation Example</summary>
+
+```yaml
+name: 'Combine Notes'
+
+on:
+  workflow_dispatch:
+    inputs:
+      previous:
+        description: 'Manually Specify Previous Tag'
+        type: string
+      pre:
+        description: 'Skip Non Pre-Releases'
+        type: boolean
+        default: true
+      max:
+        description: 'Max Releases to Process'
+        type: number
+        default: 30
+
+jobs:
+  notes:
+    name: 'Notes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: 'Combine Release Notes Action'
+        id: notes
+        uses: smashedr/combine-release-notes-action@master
+        with:
+          previous: ${{ inputs.previous }}
+          pre: ${{ inputs.pre }}
+          max: ${{ inputs.max }}
+          update: false
+
+      - name: 'Echo Markdown'
+        continue-on-error: true
+        env:
+          MARKDOWN: ${{ steps.notes.outputs.markdown }}
+        run: |
+          echo "${MARKDOWN}"
+```
+
+This workflow is available here [notes.yaml](.github/workflows/notes.yaml).
 
 </details>
 

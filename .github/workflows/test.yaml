@@ -36,6 +36,7 @@ jobs:
         with:
           update: false
           summary: false
+          #previous: "v1.0.2"
 
       #- name: "Verify Outputs"
       #  run: |
