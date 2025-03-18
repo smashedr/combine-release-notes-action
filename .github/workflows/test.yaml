@@ -38,18 +38,21 @@ jobs:
           summary: false
           #previous: "v1.0.2"
 
-      #- name: "Verify Outputs"
-      #  run: |
-      #    echo "json: '${{ steps.test.outputs.json }}'"
-      #    if [ -z '${{ steps.test.outputs.json }}' ];then
-      #      echo "No Output: json"
-      #      exit 1
-      #    fi
-      #    echo "markdown: '${{ steps.test.outputs.markdown }}'"
-      #    if [ -z '${{ steps.test.outputs.markdown }}' ];then
-      #      echo "No Output: markdown"
-      #      exit 1
-      #    fi
+      - name: "Verify Outputs"
+        env:
+          JSON: ${{ steps.test.outputs.json }}
+          MARKDOWN: ${{ steps.test.outputs.markdown }}
+        run: |
+          echo "json: '${{ env.JSON }}'"
+          if [ -z '${{ env.JSON }}' ];then
+            echo "No Output: json"
+            exit 1
+          fi
+          echo "markdown: '${{ env.MARKDOWN }}'"
+          if [ -z '${{ env.MARKDOWN }}' ];then
+            echo "No Output: markdown"
+            exit 1
+          fi
 
       #- name: "Schedule Failure Notification"
       #  if: ${{ failure() && github.event_name == 'schedule' }}

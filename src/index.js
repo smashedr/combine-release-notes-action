@@ -16,9 +16,9 @@ const github = require('@actions/github')
 
         // Debug
         core.startGroup('Debug')
-        console.log('github.context.ref:', github.context.ref)
-        console.log('github.context.eventName:', github.context.eventName)
         console.log('github.context.payload.repo:', github.context.repo)
+        console.log('github.context.eventName:', github.context.eventName)
+        console.log('github.context.ref:', github.context.ref)
         core.endGroup() // Debug
 
         // if (github.context.eventName !== 'release') {
@@ -218,6 +218,10 @@ async function getReleases(config, octokit) {
     })
     let results = []
     for (const release of releases.data) {
+        if (github.context.payload.release?.id === release.id) {
+            console.debug('SKIPPING CURRENT RELEASE:', release.tag_name)
+            continue
+        }
         if (config.previous) {
             if (release.tag_name === config.previous) {
                 console.log('STOPPING ON:', release.tag_name)

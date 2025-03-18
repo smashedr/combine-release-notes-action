@@ -28,7 +28,7 @@ Action to Generate Combine Release Notes.
 
 ## Inputs
 
-| Input&nbsp;Name | Type | Default&nbsp;Value       | Input&nbsp;Description      |
+| Input&nbsp;Name | Req. | Default&nbsp;Value       | Input&nbsp;Description      |
 | :-------------- | :--: | :----------------------- | :-------------------------- |
 | previous        |  -   | -                        | Previous Version to Stop \* |
 | pre             |  -   | `true`                   | Skip Not Pre-Releases \*    |
@@ -36,7 +36,7 @@ Action to Generate Combine Release Notes.
 | update          |  -   | `true`                   | Update Release Notes \*     |
 | heading         |  -   | `### Extended Changelog` | Release Notes Heading       |
 | summary         |  -   | `true`                   | Add Summary to Job \*       |
-| token           |  -   | `github.token`           | For Using a PAT [^1]        |
+| token           |  -   | `github.token`           | For Using a PAT             |
 
 **previous:** Set this to the previous version to stop gathering notes.
 Example, if you are on 1.0.0 and releasing 1.0.1 you can set previous to `1.0.0`
@@ -95,6 +95,8 @@ permissions:
     echo "table: '${{ steps.changelog.outputs.markdown }}'"
 ```
 
+Note: due to the way `${{}}` expressions are evaluated, multi-line output gets executed in a run block.
+
 More Examples Coming Soon...
 
 ## Examples
@@ -133,10 +135,13 @@ More Examples Coming Soon...
   with:
     update: false
 
-- name: 'Echo Output'
+- name: 'Echo Outputs'
+  env:
+    JSON: ${{ steps.changelog.outputs.json }}
+    MARKDOWN: ${{ steps.changelog.outputs.markdown }}
   run: |
-    echo "changes: '${{ steps.changelog.outputs.json}}'"
-    echo "table: '${{ steps.changelog.outputs.markdown}}'"
+    echo "json: '${{ env.JSON }}'"
+    echo "markdown: '${{ env.MARKDOWN }}'"
 ```
 
 </details>
